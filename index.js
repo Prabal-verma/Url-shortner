@@ -1,9 +1,16 @@
 const express = require("express");
 const { connectToMongoDB } = require("./connect");
-const urlRoute = require("./routes/url");
 const URL = require("./models/url");
+const cookieParser = require("cookie-parser");
+const { restrictToLoggedInUsers, checkAuth } = require("./middlewares/auth");
+
+const urlRoute = require("./routes/url");
+const userRoute = require("./routes/user");
+const staticRoute = require("./routes/staticRoute");
+
+
 const path = require("path");
-const staticRoute = require("./routes/staticRoute.js");
+
 
 const app = express();
 const PORT = 8001;
@@ -18,6 +25,7 @@ app.set("views", path.resolve("./views"));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 // Test route
 app.get("/test", async (req, res) => {
@@ -30,8 +38,10 @@ app.get("/test", async (req, res) => {
 });
 
 // Use URL routes
-app.use("/url", urlRoute);
-app.use("/", staticRoute);
+app.use("/url",restrictToLoggedInUsers, urlRoute);
+app.use("/",checkAuth, staticRoute);
+app.use("/user", userRoute);  
+
 
 // Redirect based on shortId
 app.get("/:shortId", async (req, res) => {
